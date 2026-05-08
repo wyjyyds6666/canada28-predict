@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>加拿大28 · API自动预测</title>
+    <title>加拿大28 · 自动API预测</title>
     <style>
         *{box-sizing:border-box;font-family:system-ui,sans-serif;}
         body{background:#0b1a2a;margin:0;padding:20px;}
@@ -13,51 +13,101 @@
         .numbers{display:flex;gap:10px;justify-content:center;margin:10px 0;}
         .num{background:white;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;border-radius:16px;}
         .result{font-size:48px;font-weight:bold;text-align:center;margin:20px 0;}
-        .log{background:#f0f4fa;border-radius:20px;padding:12px;font-size:12px;font-family:monospace;}
-        .small{background:#fbd588;padding:8px;border-radius:30px;text-align:center;}
-        .big{background:#fbc28e;padding:8px;border-radius:30px;text-align:center;}
+        .log{background:#f0f4fa;border-radius:20px;padding:12px;font-size:12px;font-family:monospace;word-break:break-all;}
+        .small-bg{background:#fbd588;}
+        .big-bg{background:#fbc28e;}
+        .flex{display:flex;gap:10px;margin-top:10px;}
+        .flex div{flex:1;padding:8px;border-radius:30px;text-align:center;}
     </style>
 </head>
 <body>
 <div class="card">
     <h2>🍁 加拿大28 · 自动三期预测</h2>
-    <button id="fetchBtn">🔄 获取最新三期并预测</button>
+    <button id="fetchBtn">🔄 获取最新开奖并预测</button>
+    <div id="statusMsg" style="font-size:12px;color:#2c6e9e;margin:8px 0;"></div>
     <div id="periodsDiv">点击按钮获取数据</div>
     <div id="resultDiv" style="display:none;">
         <div class="result" id="finalNum">--</div>
-        <div id="groupDiv"></div>
+        <div class="flex" id="groupDiv"></div>
         <div class="log" id="logDiv"></div>
     </div>
 </div>
 
 <script>
-    const API = "https://api.api68.com/pk10/pk10.aspx?code=json&caipiaoid=65&format=json&date=2026-05-02";
+    // 使用 CORS 代理解决跨域问题
+    const PROXY = "https://api.allorigins.win/raw?url=";
+    const API_URL = "https://pc28.help/api/kj.json?nbr=100";
     
     async function getData() {
-        document.getElementById("periodsDiv").innerHTML = "加载中...";
+        const statusDiv = document.getElementById("statusMsg");
+        const periodsDiv = document.getElementById("periodsDiv");
+        const resultDiv = document.getElementById("resultDiv");
+        
+        statusDiv.innerHTML = "正在获取数据...";
+        periodsDiv.innerHTML = "加载中...";
+        resultDiv.style.display = "none";
+        
         try {
-            let resp = await fetch(API);
-            let json = await resp.json();
-            if(json.message !== "success") throw new Error("API失败");
-            let rows = json.data.slice(0, 3);
-            let periods = rows.map(row => {
-                let nums = row.number.split('+').map(n => parseInt(n));
+            // 通过代理请求API
+            const proxyUrl = PROXY + encodeURIComponent(API_URL);
+            const response = await fetch(proxyUrl);
+            
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
+            const text = await response.text();
+            // 尝试解析JSON
+            let json;
+            try {
+                json = JSON.parse(text);
+            } catch(e) {
+                throw new Error("返回数据不是JSON格式");
+            }
+            
+            // 根据实际返回结构调整（假设返回数组或对象）
+            let dataArray = Array.isArray(json) ? json : json.data || json.list || json.records;
+            if (!dataArray || !dataArray.length) {
+                // 也可能是直接返回的就是开奖列表
+                if (json[0] && json[0].number) dataArray = json;
+                else throw new Error("未找到开奖数据");
+            }
+            
+            // 取最新三期
+            const latest3 = dataArray.slice(0, 3);
+            if (latest3.length < 3) throw new Error("数据不足三期");
+            
+            // 解析每一期
+            const periods = latest3.map(item => {
+                let numberStr = item.number || item.num || item.code || "";
+                let nums = numberStr.split('+').map(n => parseInt(n));
+                if (nums.length !== 3) nums = [0,0,0];
+                let sum = item.sum || item.total || item.num;
+                if (!sum && nums.length===3) sum = nums[0]+nums[1]+nums[2];
+                if (typeof sum === 'string') sum = parseInt(sum);
                 return {
-                    nbr: row.nbr,
+                    nbr: item.nbr || item.issue || item.period || "",
                     nums: nums,
-                    sum: parseInt(row.num),
-                    time: row.time
+                    sum: sum,
+                    time: item.time || item.datetime || ""
                 };
             });
+            
             displayPeriods(periods);
             predict(periods);
+            statusDiv.innerHTML = `✅ 获取成功 | 最新期号: ${periods[0].nbr}`;
+            
         } catch(e) {
-            document.getElementById("periodsDiv").innerHTML = "获取失败: " + e.message;
+            console.error(e);
+            statusDiv.innerHTML = `❌ 获取失败: ${e.message}`;
+            periodsDiv.innerHTML = `获取失败。可能原因：<br>
+            1. API不支持跨域<br>
+            2. 接口地址需要更换<br>
+            3. 请尝试使用手动版本<br>
+            <button onclick="location.reload()" style="margin-top:10px;width:auto;padding:8px 16px;">重试</button>`;
         }
     }
     
     function displayPeriods(p) {
-        let titles = ["最新一期 (第三期)", "中间期 (第二期)", "最早期 (第一期)"];
+        const titles = ["最新一期 (第三期)", "中间期 (第二期)", "最早期 (第一期)"];
         let html = "";
         for(let i=0; i<3; i++) {
             html += `<div class="period">
@@ -83,12 +133,17 @@
         let divRes = dividend / divisor;
         let floorDiv = Math.floor(divRes);
         
-        // 时间系数：用最新一期的时间（小时+分钟/100）
-        let timeStr = p[0].time;
-        let hour = parseInt(timeStr.split(':')[0]);
-        let minute = parseInt(timeStr.split(':')[1]);
+        // 时间系数：用最新一期的时间
+        let hour = 21, minute = 7;
+        if(p[0].time) {
+            let timeStr = p[0].time;
+            let parts = timeStr.match(/(\d{1,2}):(\d{2})/);
+            if(parts) {
+                hour = parseInt(parts[1]);
+                minute = parseInt(parts[2]);
+            }
+        }
         let coef = hour + minute/100;
-        
         let mulRes = floorDiv * coef;
         let final = Math.floor(dividend - mulRes);
         if(final < 0) final = 0;
@@ -98,8 +153,8 @@
         document.getElementById("resultDiv").style.display = "block";
         document.getElementById("finalNum").innerHTML = final;
         document.getElementById("groupDiv").innerHTML = isSmall ? 
-            '<div class="small">🔻 预测结果：小区域 (0-13, 28-49)</div>' : 
-            '<div class="big">🔺 预测结果：大区域 (14-27, 50-99)</div>';
+            '<div class="small-bg">🔻 小区域 (0-13, 28-49)</div><div>大区域 (14-27, 50-99)</div>' : 
+            '<div>小区域 (0-13, 28-49)</div><div class="big-bg">🔺 大区域 (14-27, 50-99)</div>';
         
         document.getElementById("logDiv").innerHTML = `
             📐 拼接: abc1=${abc1} abc2=${abc2} abc3=${abc3}<br>
@@ -112,7 +167,7 @@
     }
     
     document.getElementById("fetchBtn").onclick = getData;
-    getData(); // 页面加载自动执行
+    getData(); // 页面加载自动获取
 </script>
 </body>
 </html>
