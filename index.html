@@ -3,86 +3,116 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>加拿大28预测</title>
+    <title>加拿大28 · API自动预测</title>
     <style>
-        *{box-sizing:border-box;font-family:system-ui}
-        body{background:#1a2a3f;margin:0;padding:20px}
-        .card{max-width:600px;margin:0 auto;background:white;border-radius:32px;padding:20px}
-        input{width:60px;height:60px;font-size:24px;text-align:center;margin:5px;border-radius:16px;border:1px solid #ccc}
-        button{background:#f7b32b;border:none;padding:12px;border-radius:40px;font-weight:bold;margin:10px 5px}
-        .big{font-size:48px;font-weight:bold;text-align:center}
-        .result{background:#eef2fa;border-radius:24px;padding:16px;margin-top:16px}
+        *{box-sizing:border-box;font-family:system-ui,sans-serif;}
+        body{background:#0b1a2a;margin:0;padding:20px;}
+        .card{max-width:650px;margin:0 auto;background:white;border-radius:32px;padding:20px;}
+        button{background:#f7b32b;border:none;padding:12px 20px;border-radius:40px;font-weight:bold;margin:10px 0;width:100%;}
+        .period{background:#eef2fa;border-radius:20px;padding:12px;margin:12px 0;}
+        .numbers{display:flex;gap:10px;justify-content:center;margin:10px 0;}
+        .num{background:white;width:50px;height:50px;display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:bold;border-radius:16px;}
+        .result{font-size:48px;font-weight:bold;text-align:center;margin:20px 0;}
+        .log{background:#f0f4fa;border-radius:20px;padding:12px;font-size:12px;font-family:monospace;}
+        .small{background:#fbd588;padding:8px;border-radius:30px;text-align:center;}
+        .big{background:#fbc28e;padding:8px;border-radius:30px;text-align:center;}
     </style>
 </head>
 <body>
 <div class="card">
-    <h2>🇨🇦 加拿大28 三期预测</h2>
-    <div id="inputs"></div>
-    <button onclick="calc()">🔮 预测</button>
-    <button onclick="resetDemo()">🔄 重置</button>
-    <div class="result">
-        <div class="big" id="final">--</div>
-        <div id="group"></div>
-        <div id="steps" style="font-size:12px"></div>
+    <h2>🍁 加拿大28 · 自动三期预测</h2>
+    <button id="fetchBtn">🔄 获取最新三期并预测</button>
+    <div id="periodsDiv">点击按钮获取数据</div>
+    <div id="resultDiv" style="display:none;">
+        <div class="result" id="finalNum">--</div>
+        <div id="groupDiv"></div>
+        <div class="log" id="logDiv"></div>
     </div>
 </div>
+
 <script>
-    const demo = {
-        p1:[7,5,3], s1:15,
-        p2:[9,8,6], s2:23,
-        p3:[8,9,7], s3:24,
-        h:21, m:7
-    };
-    function renderInputs(){
-        let html='<h3>第一期(早)</h3>';
-        for(let i=0;i<3;i++) html+=`<input id="a${i}" value="${demo.p1[i]}" type="number" min="0" max="9">`;
-        html+=`<div>和值<input id="s1" value="${demo.s1}" type="number" min="0" max="27"></div>`;
-        html+='<h3>第二期(中)</h3>';
-        for(let i=0;i<3;i++) html+=`<input id="b${i}" value="${demo.p2[i]}" type="number" min="0" max="9">`;
-        html+=`<div>和值<input id="s2" value="${demo.s2}" type="number" min="0" max="27"></div>`;
-        html+='<h3>第三期(最新)</h3>';
-        for(let i=0;i<3;i++) html+=`<input id="c${i}" value="${demo.p3[i]}" type="number" min="0" max="9">`;
-        html+=`<div>和值<input id="s3" value="${demo.s3}" type="number" min="0" max="27"></div>`;
-        html+='<h3>时间系数</h3>';
-        html+=`<input id="h" value="${demo.h}" type="number" min="0" max="23" style="width:80px">时 <input id="m" value="${demo.m}" type="number" min="0" max="59" style="width:80px">分`;
-        document.getElementById('inputs').innerHTML=html;
-    }
-    function val(id){return parseInt(document.getElementById(id).value)||0;}
-    function calc(){
-        const p1=[val('a0'),val('a1'),val('a2')];
-        const p2=[val('b0'),val('b1'),val('b2')];
-        const p3=[val('c0'),val('c1'),val('c2')];
-        const sums=[val('s1'),val('s2'),val('s3')];
-        const abc1=parseInt(`${p3[0]}${p2[0]}${p1[0]}`);
-        const abc2=parseInt(`${p3[1]}${p2[1]}${p1[1]}`);
-        const abc3=parseInt(`${p3[2]}${p2[2]}${p1[2]}`);
-        const dividend=abc1+abc2+abc3;
-        const divisor=sums[0]+sums[1]+sums[2];
-        const divRes=divisor===0?0:dividend/divisor;
-        const coef=val('h')+val('m')/100;
-        const mulRes=Math.floor(divRes)*coef;
-        let final=Math.floor(dividend-mulRes);
-        if(final<0)final=0;
-        const isSmall=(final>=0&&final<=13)||(final>=28&&final<=49);
-        document.getElementById('final').innerText=final;
-        document.getElementById('group').innerHTML=isSmall?'🔻 小区域 (0-13,28-49)':'🔺 大区域 (14-27,50-99)';
-        document.getElementById('steps').innerHTML=`abc1=${abc1} abc2=${abc2} abc3=${abc3} | dividend=${dividend} divisor=${divisor} | floor(divRes)=${Math.floor(divRes)} coef=${coef.toFixed(4)} mulRes=${mulRes.toFixed(2)}`;
-    }
-    function resetDemo(){
-        for(let i=0;i<3;i++){
-            document.getElementById(`a${i}`).value=demo.p1[i];
-            document.getElementById(`b${i}`).value=demo.p2[i];
-            document.getElementById(`c${i}`).value=demo.p3[i];
+    const API = "https://api.api68.com/pk10/pk10.aspx?code=json&caipiaoid=65&format=json&date=2026-05-02";
+    
+    async function getData() {
+        document.getElementById("periodsDiv").innerHTML = "加载中...";
+        try {
+            let resp = await fetch(API);
+            let json = await resp.json();
+            if(json.message !== "success") throw new Error("API失败");
+            let rows = json.data.slice(0, 3);
+            let periods = rows.map(row => {
+                let nums = row.number.split('+').map(n => parseInt(n));
+                return {
+                    nbr: row.nbr,
+                    nums: nums,
+                    sum: parseInt(row.num),
+                    time: row.time
+                };
+            });
+            displayPeriods(periods);
+            predict(periods);
+        } catch(e) {
+            document.getElementById("periodsDiv").innerHTML = "获取失败: " + e.message;
         }
-        document.getElementById('s1').value=demo.s1;
-        document.getElementById('s2').value=demo.s2;
-        document.getElementById('s3').value=demo.s3;
-        document.getElementById('h').value=demo.h;
-        document.getElementById('m').value=demo.m;
-        calc();
     }
-    renderInputs();
-    calc();
+    
+    function displayPeriods(p) {
+        let titles = ["最新一期 (第三期)", "中间期 (第二期)", "最早期 (第一期)"];
+        let html = "";
+        for(let i=0; i<3; i++) {
+            html += `<div class="period">
+                <strong>${titles[i]} 期号:${p[i].nbr} 时间:${p[i].time}</strong>
+                <div class="numbers">
+                    <div class="num">${p[i].nums[0]}</div>
+                    <div class="num">${p[i].nums[1]}</div>
+                    <div class="num">${p[i].nums[2]}</div>
+                </div>
+                <div>和值: ${p[i].sum}</div>
+            </div>`;
+        }
+        document.getElementById("periodsDiv").innerHTML = html;
+    }
+    
+    function predict(p) {
+        // p[0]=最新(第三期), p[1]=第二期, p[2]=第一期
+        let abc1 = parseInt(`${p[0].nums[0]}${p[1].nums[0]}${p[2].nums[0]}`);
+        let abc2 = parseInt(`${p[0].nums[1]}${p[1].nums[1]}${p[2].nums[1]}`);
+        let abc3 = parseInt(`${p[0].nums[2]}${p[1].nums[2]}${p[2].nums[2]}`);
+        let dividend = abc1 + abc2 + abc3;
+        let divisor = p[0].sum + p[1].sum + p[2].sum;
+        let divRes = dividend / divisor;
+        let floorDiv = Math.floor(divRes);
+        
+        // 时间系数：用最新一期的时间（小时+分钟/100）
+        let timeStr = p[0].time;
+        let hour = parseInt(timeStr.split(':')[0]);
+        let minute = parseInt(timeStr.split(':')[1]);
+        let coef = hour + minute/100;
+        
+        let mulRes = floorDiv * coef;
+        let final = Math.floor(dividend - mulRes);
+        if(final < 0) final = 0;
+        
+        let isSmall = (final>=0 && final<=13) || (final>=28 && final<=49);
+        
+        document.getElementById("resultDiv").style.display = "block";
+        document.getElementById("finalNum").innerHTML = final;
+        document.getElementById("groupDiv").innerHTML = isSmall ? 
+            '<div class="small">🔻 预测结果：小区域 (0-13, 28-49)</div>' : 
+            '<div class="big">🔺 预测结果：大区域 (14-27, 50-99)</div>';
+        
+        document.getElementById("logDiv").innerHTML = `
+            📐 拼接: abc1=${abc1} abc2=${abc2} abc3=${abc3}<br>
+            🔢 dividend=${dividend} divisor=${divisor}<br>
+            📈 divRes=${divRes.toFixed(4)} floor=${floorDiv}<br>
+            ⏱️ coef=${hour}+${minute}/100 = ${coef.toFixed(4)}<br>
+            ✖️ mulRes=${mulRes.toFixed(2)}<br>
+            🎯 最终数字 = floor(${dividend} - ${mulRes.toFixed(2)}) = ${final}
+        `;
+    }
+    
+    document.getElementById("fetchBtn").onclick = getData;
+    getData(); // 页面加载自动执行
 </script>
 </body>
 </html>
